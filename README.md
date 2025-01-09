@@ -1,6 +1,11 @@
 # PiSQM - Sky Quality Meter for Raspberry Pi
 
+Heavily inspired by Richard's work on the ESP platform
+
+https://github.com/rabssm/Radiometer
+
 A Sky Quality Meter implementation for Raspberry Pi using the TSL2591 light sensor. This project measures sky brightness in magnitudes per square arcsecond (MPSAS) and publishes the readings to an MQTT broker.
+
 
 ## Hardware Requirements
 
