@@ -23,7 +23,23 @@ sudo apt-get install -y python3-pip i2c-tools
 pip3 install smbus2 paho-mqtt
 ```
 
-3. Verify I2C connection:
+3. Set up Python virtual environment:
+
+```bash
+
+cd PiSQM
+
+# Create virtual environment
+python -m venv venv
+
+# Activate virtual environment
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+4. Verify I2C connection:
 ```bash
 sudo i2cdetect -y 1
 ```
