@@ -12,55 +12,95 @@
 # log (I) = log (3.719) - 7 - 0.4 M
 #
 # M = -16.07 - 2.5*log(C)
+
 import tsl2591
 import time
 import math
-from machine import I2C, RTC, WDT
-from utime import sleep
+import paho.mqtt.client as mqtt
+from time import sleep
+import sys
+import signal
 
-wdt = WDT(timeout=30000)
+# Constants from WIFI_CONFIG_OTA.py
+MQTT_SERVER = "192.168.1.250"
+TOPIC_SUB = "Test/SQM/incoming"
+TOPIC_PUB = "Test/SQM"
+TOPIC_PUB_TIME = "Test/SQM/DateTime"
+
+# Constants for sky brightness calculation
 M0 = -16.07
 GA = 25.55  # this is a glass attenuation factor, depends on what's in front of the detector. Guesstimate
 
-tsl = tsl2591.Tsl2591(1,2)
-tsl.set_gain(tsl2591.GAIN_MED)
-tsl.set_timing(tsl2591.INTEGRATIONTIME_300MS)
-
-def sub_cb(topic, msg):
-  print((topic, msg))
-  if topic == b'notification' and msg == b'received':
-    print('ESP received hall value')
-
-def connect_and_subscribe():
-  global client_id, mqtt_server, topic_sub
-  client = MQTTClient(client_id, mqtt_server)
-  client.set_callback(sub_cb)
-  client.connect()
-  client.subscribe(topic_sub)
-  print('Connected to %s MQTT broker, subscribed to %s topic' % (mqtt_server, topic_sub))
-  return client
-
-def restart_and_reconnect():
-  print('Failed to connect to MQTT broker. Reconnecting...')
-  time.sleep(10)
-  machine.reset()
-
+# Initialize the TSL2591 sensor
 try:
-  client = connect_and_subscribe()
-except OSError as e:
-  restart_and_reconnect()
+    tsl = tsl2591.Tsl2591(1)
+    tsl.set_gain(tsl2591.GAIN_MED)
+    tsl.set_timing(tsl2591.INTEGRATIONTIME_300MS)
+except Exception as e:
+    print(f"Failed to initialize TSL2591 sensor: {e}")
+    sys.exit(1)
 
+# MQTT callbacks
+def on_connect(client, userdata, flags, rc):
+    print(f"Connected to MQTT broker with result code {rc}")
+    client.subscribe(TOPIC_SUB)
+
+def on_message(client, userdata, msg):
+    print(f"Message received on {msg.topic}: {msg.payload.decode()}")
+
+def on_disconnect(client, userdata, rc):
+    print(f"Disconnected from MQTT broker with result code {rc}")
+    if rc != 0:
+        print("Unexpected disconnection. Attempting to reconnect...")
+        try:
+            client.reconnect()
+        except Exception as e:
+            print(f"Failed to reconnect: {e}")
+
+# Setup MQTT client
+client = mqtt.Client()
+client.on_connect = on_connect
+client.on_message = on_message
+client.on_disconnect = on_disconnect
+
+# Connect to MQTT broker
+try:
+    client.connect(MQTT_SERVER, 1883, 60)
+    client.loop_start()
+except Exception as e:
+    print(f"Failed to connect to MQTT broker: {e}")
+    sys.exit(1)
+
+# Handle graceful shutdown
+def signal_handler(signum, frame):
+    print("\nShutting down...")
+    client.loop_stop()
+    client.disconnect()
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, signal_handler)
+signal.signal(signal.SIGTERM, signal_handler)
+
+# Main loop
+print("Starting measurement loop...")
 while True:
-  sleep(10)
-  try:
-      full, ir = tsl.advanced_read()
-      full_C, ir_C = tsl.calculate_light(full, ir)
-      if ((full_C - ir_C) != 0):
-          mpsas = M0 + GA -2.5*math.log10(full_C - ir_C)
-      else:
-          mpsas = -25.
-      mpsas_msg = b'{0:.2f}'.format(mpsas)
-      client.publish(topic_pub, mpsas_msg)
-      wdt.feed()
-  except OSError as e:
-      restart_and_reconnect()
+    try:
+        # Read sensor data
+        full, ir = tsl.advanced_read()
+        full_C, ir_C = tsl.calculate_light(full, ir)
+        
+        # Calculate sky brightness
+        if ((full_C - ir_C) != 0):
+            mpsas = M0 + GA - 2.5 * math.log10(full_C - ir_C)
+        else:
+            mpsas = -25.
+            
+        # Format and publish message
+        mpsas_msg = f"{mpsas:.2f}"
+        client.publish(TOPIC_PUB, mpsas_msg)
+        print(f"Published sky brightness: {mpsas_msg} MPSAS")
+        
+    except Exception as e:
+        print(f"Error in measurement loop: {e}")
+        
+    sleep(10)  # Wait 10 seconds between measurements
