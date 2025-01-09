@@ -1,0 +1,6 @@
+SSID = "IoT"
+PASSWORD = ""
+MQTT_SERVER = "192.168.1.250"
+TOPIC_SUB = "Astro/SQM/incoming"
+TOPIC_PUB = "Astro/SQM"
+TOPIC_PUB_TIME = "Astro/SQM/DateTime"
