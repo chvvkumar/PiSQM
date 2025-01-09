@@ -1,6 +1,0 @@
-SSID = "IoT"
-PASSWORD = "kkkkkkkk"
-MQTT_SERVER = "192.168.1.250"
-TOPIC_SUB = "Test/SQM/incoming"
-TOPIC_PUB = "Test/SQM"
-TOPIC_PUB_TIME = "Test/SQM/DateTime"

@@ -21,6 +21,10 @@ from time import sleep
 import sys
 import signal
 
+# WiFi Configuration
+SSID = "IoT"
+PASSWORD = "kkkkkkkk"
+
 # Constants from WIFI_CONFIG_OTA.py
 MQTT_SERVER = "192.168.1.250"
 TOPIC_SUB = "Test/SQM/incoming"
