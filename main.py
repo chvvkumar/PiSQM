@@ -99,10 +99,12 @@ while True:
         else:
             mpsas = -25.
             
-        # Format and publish message
+        # Format and publish messages
         mpsas_msg = f"{mpsas:.2f}"
-        client.publish(TOPIC_PUB, mpsas_msg)
-        print(f"Published sky brightness: {mpsas_msg} MPSAS")
+        timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
+        client.publish(TOPIC_PUB, mpsas_msg, retain=True)
+        client.publish(TOPIC_PUB_TIME, timestamp, retain=True)
+        print(f"Published sky brightness: {mpsas_msg} MPSAS at {timestamp}")
         
     except Exception as e:
         print(f"Error in measurement loop: {e}")
