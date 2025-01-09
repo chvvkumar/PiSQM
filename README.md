@@ -2,6 +2,9 @@
 
 A Sky Quality Meter implementation for Raspberry Pi using the TSL2591 light sensor. This project measures sky brightness in magnitudes per square arcsecond (MPSAS) and publishes the readings to an MQTT broker.
 
+Heavily inspired by Richard's work
+https://github.com/rabssm/Radiometer
+
 ## Hardware Requirements
 
 - Raspberry Pi (any model with I2C pins)
