@@ -19,19 +19,36 @@ A Sky Quality Meter implementation for Raspberry Pi using the TSL2591 light sens
 ```bash
 sudo raspi-config
 # Navigate to: Interface Options -> I2C -> Enable
+sudo apt-get install -y i2c-tools
 ```
 
-2. Install required packages:
+2. Verify I2C connection:
 ```bash
+sudo i2cdetect -y 1
+# You should see the TSL2591 sensor at address 0x29.
+```
+
+
+3. Create virtual environment and Install required packages:
+
+```bash
+cd PiSQM
+
+# Create virtual environment
+python -m venv venv
+
+# Activate virtual environment
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
 sudo apt-get update
-sudo apt-get install -y python3-pip i2c-tools
 pip3 install smbus2 paho-mqtt
 ```
 
-3. Set up Python virtual environment:
-
+4. Set up Python virtual environment:
 ```bash
-
 cd PiSQM
 
 # Create virtual environment
@@ -44,11 +61,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-4. Verify I2C connection:
-```bash
-sudo i2cdetect -y 1
-```
-You should see the TSL2591 sensor at address 0x29.
+
 
 ## Wiring
 
