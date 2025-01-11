@@ -21,11 +21,9 @@ from time import sleep
 import sys
 import signal
 
-# WiFi Configuration
+# WiFi and MQTT Configuration
 SSID = ""
 PASSWORD = ""
-
-# Constants from WIFI_CONFIG_OTA.py
 MQTT_SERVER = ""
 TOPIC_SUB = ""
 TOPIC_PUB = ""
