@@ -43,7 +43,6 @@ source venv/bin/activate
 # Install dependencies
 pip install -r requirements.txt
 
-sudo apt-get update
 pip3 install smbus2 paho-mqtt
 ```
 
