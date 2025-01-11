@@ -22,14 +22,14 @@ import sys
 import signal
 
 # WiFi Configuration
-SSID = "IoT"
-PASSWORD = "kkkkkkkk"
+SSID = ""
+PASSWORD = ""
 
 # Constants from WIFI_CONFIG_OTA.py
-MQTT_SERVER = "192.168.1.250"
-TOPIC_SUB = "Test/SQM/incoming"
-TOPIC_PUB = "Test/SQM"
-TOPIC_PUB_TIME = "Test/SQM/DateTime"
+MQTT_SERVER = ""
+TOPIC_SUB = ""
+TOPIC_PUB = ""
+TOPIC_PUB_TIME = ""
 
 # Constants for sky brightness calculation
 M0 = -16.07
