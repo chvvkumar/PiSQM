@@ -20,14 +20,14 @@ import paho.mqtt.client as mqtt
 from time import sleep
 import sys
 import signal
+import json
+import os
 
-# WiFi and MQTT Configuration
-SSID = ""
-PASSWORD = ""
-MQTT_SERVER = ""
-TOPIC_SUB = ""
-TOPIC_PUB = ""
-TOPIC_PUB_TIME = ""
+#MQTT Configuration
+MQTT_SERVER = "192.168.1.250"
+TOPIC_SUB = "Test/SQM/sub"
+TOPIC_PUB = "Test/SQM"
+TOPIC_PUB_TIME = "Test/SQM/time"
 
 # Constants for sky brightness calculation
 M0 = -16.07
@@ -104,6 +104,17 @@ while True:
         client.publish(TOPIC_PUB_TIME, timestamp, retain=True)
         print(f"Published sky brightness: {mpsas_msg} MPSAS at {timestamp}")
         
+        # Write SQM value to JSON file
+        sqm_data = {"sqm": float(mpsas_msg)}
+        json_path = "/home/pi/allsky/config/overlay/extra/PiSQM.json"
+        
+        # Create directory if it doesn't exist
+        os.makedirs(os.path.dirname(json_path), exist_ok=True)
+        
+        # Write JSON file
+        with open(json_path, 'w') as f:
+            json.dump(sqm_data, f)
+            
     except Exception as e:
         print(f"Error in measurement loop: {e}")
         
