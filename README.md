@@ -47,22 +47,6 @@ pip install -r requirements.txt
 pip3 install smbus2 paho-mqtt
 ```
 
-4. Set up Python virtual environment:
-```bash
-cd PiSQM
-
-# Create virtual environment
-python -m venv venv
-
-# Activate virtual environment
-source venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-```
-
-
-
 ## Wiring
 
 Connect the TSL2591 sensor to the Raspberry Pi:
