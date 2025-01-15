@@ -22,6 +22,12 @@ import sys
 import signal
 import json
 import os
+from collections import deque
+from statistics import mean
+
+# Configuration
+WINDOW_SIZE = 5  # Number of readings to average
+MAX_CHANGE = 3.0  # Maximum allowed change in MPSAS between readings
 
 #MQTT Configuration
 MQTT_SERVER = "192.168.1.250"
@@ -83,6 +89,10 @@ def signal_handler(signum, frame):
 signal.signal(signal.SIGINT, signal_handler)
 signal.signal(signal.SIGTERM, signal_handler)
 
+# Initialize readings buffer
+readings_buffer = deque(maxlen=WINDOW_SIZE)
+last_valid_mpsas = None
+
 # Main loop
 print("Starting measurement loop...")
 while True:
@@ -93,10 +103,28 @@ while True:
         
         # Calculate sky brightness
         if ((full_C - ir_C) != 0):
-            mpsas = M0 + GA - 2.5 * math.log10(full_C - ir_C)
+            current_mpsas = M0 + GA - 2.5 * math.log10(full_C - ir_C)
         else:
-            mpsas = -25.
-            
+            current_mpsas = -25.
+        
+        # Validate the reading
+        if last_valid_mpsas is None:
+            # First reading
+            last_valid_mpsas = current_mpsas
+            readings_buffer.append(current_mpsas)
+            mpsas = current_mpsas
+        else:
+            # Check if the change is within acceptable limits
+            if abs(current_mpsas - last_valid_mpsas) <= MAX_CHANGE:
+                readings_buffer.append(current_mpsas)
+                last_valid_mpsas = current_mpsas
+                # Calculate moving average
+                mpsas = mean(readings_buffer)
+            else:
+                # Use last valid reading if change is too extreme
+                mpsas = last_valid_mpsas
+                print(f"Rejected spike: {current_mpsas:.2f} MPSAS (change: {abs(current_mpsas - last_valid_mpsas):.2f})")
+        
         # Format and publish messages
         mpsas_msg = f"{mpsas:.2f}"
         timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
