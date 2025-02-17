@@ -105,8 +105,8 @@ while True:
         print(f"Published sky brightness: {mpsas_msg} MPSAS at {timestamp}")
         
         # Write SQM value to JSON file
-        sqm_data = {"sqm": float(mpsas_msg)}
-        json_path = "/home/pi/allsky/config/overlay/extra/PiSQM.json"
+        sqm_data = {"AS_MPSAS": float(mpsas_msg)}
+        json_path = "/home/pi/allsky/config/overlay/extra/allskytsl2591SQM.json"
         
         # Create directory if it doesn't exist
         os.makedirs(os.path.dirname(json_path), exist_ok=True)
