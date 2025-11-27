@@ -127,6 +127,7 @@ while True:
             
             # Publish Params
             params_data = {
+                "sqm": float(mpsas_msg),
                 "gain": tsl.gain,
                 "integration_time_ms": tsl.get_int_time_ms(),
                 "timestamp": timestamp,
