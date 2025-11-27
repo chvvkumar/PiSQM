@@ -1,17 +1,5 @@
-# https://www.mnassa.org.za/html/Oct2017/2017MNASSA..76..Oct..215.pdf
-#
-# I = 3.719 x 10^(-9-0.4*M)  W/m2s2
-#
-# 1 W/m2 = 1 W/10^4 cm2 = 10^-4 W/cm2 = 100 uW/cm2
-#
-# I = 3.719 x 10^(-7-0.4*M)  uW/cm2s2
-#
-# from datasheet: at gain = 400 and T = 100 ms, 264 counts / uW/cm2
-# this conversion is done in tsl2591.calculate_light()
-# 
-# log (I) = log (3.719) - 7 - 0.4 M
-#
-# M = -16.07 - 2.5*log(C)
+# SQM Reader with Auto-Ranging
+# Uses TSL2591 to calculate MPSAS (Magnitudes Per Square Arc Second)
 
 import tsl2591
 import time
@@ -23,21 +11,22 @@ import signal
 import json
 import os
 
-#MQTT Configuration
+# MQTT Configuration
 MQTT_SERVER = "192.168.1.250"
 TOPIC_SUB = "Test/SQM/sub"
 TOPIC_PUB = "Test/SQM"
 TOPIC_PUB_TIME = "Test/SQM/time"
 
 # Constants for sky brightness calculation
+# M = M0 + GA - 2.5 * log10(Counts)
 M0 = -16.07
-GA = 25.55  # this is a glass attenuation factor, depends on what's in front of the detector. Guesstimate
+GA = 25.55  # Glass attenuation factor
 
 # Initialize the TSL2591 sensor
 try:
-    tsl = tsl2591.Tsl2591(1)
-    tsl.set_gain(tsl2591.GAIN_MED)
-    tsl.set_timing(tsl2591.INTEGRATIONTIME_300MS)
+    print("Initializing TSL2591...")
+    # Initialize with default medium settings, auto-ranging will adjust
+    tsl = tsl2591.Tsl2591(1, tsl2591.INTEGRATIONTIME_200MS, tsl2591.GAIN_MED)
 except Exception as e:
     print(f"Failed to initialize TSL2591 sensor: {e}")
     sys.exit(1)
@@ -71,7 +60,9 @@ try:
     client.loop_start()
 except Exception as e:
     print(f"Failed to connect to MQTT broker: {e}")
-    sys.exit(1)
+    # Continue without MQTT if fails? Or exit?
+    # sys.exit(1) 
+    print("Continuing without MQTT...")
 
 # Handle graceful shutdown
 def signal_handler(signum, frame):
@@ -84,39 +75,52 @@ signal.signal(signal.SIGINT, signal_handler)
 signal.signal(signal.SIGTERM, signal_handler)
 
 # Main loop
-print("Starting measurement loop...")
+print("Starting auto-ranging measurement loop...")
 while True:
     try:
-        # Read sensor data
+        # Read sensor data with Auto-Ranging
+        # The new advanced_read() handles gain/time switching automatically
         full, ir = tsl.advanced_read()
+        
+        # Calculate flux in uW/cm2
+        # calculate_light uses the current gain/time settings stored in the class
         full_C, ir_C = tsl.calculate_light(full, ir)
         
-        # Calculate sky brightness
-        if ((full_C - ir_C) != 0):
-            mpsas = M0 + GA - 2.5 * math.log10(full_C - ir_C)
+        # Calculate sky brightness (MPSAS)
+        # Avoid log(0) errors
+        flux_diff = full_C - ir_C
+        if flux_diff > 0:
+            mpsas = M0 + GA - 2.5 * math.log10(flux_diff)
         else:
-            mpsas = -25.
+            # Too dark to measure or error
+            mpsas = 25.0 # Typical dark limit convention or -25 based on previous code
             
         # Format and publish messages
         mpsas_msg = f"{mpsas:.2f}"
         timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
-        client.publish(TOPIC_PUB, mpsas_msg, retain=True)
-        client.publish(TOPIC_PUB_TIME, timestamp, retain=True)
-        print(f"Published sky brightness: {mpsas_msg} MPSAS at {timestamp}")
+        
+        if client.is_connected():
+            client.publish(TOPIC_PUB, mpsas_msg, retain=True)
+            client.publish(TOPIC_PUB_TIME, timestamp, retain=True)
+            
+        print(f"MPSAS: {mpsas_msg} | Time: {tsl.get_int_time_ms()}ms | Gain: {tsl.gain} | Raw Full: {full}")
         
         # Write SQM value to JSON file
         sqm_data = {"AS_MPSAS": float(mpsas_msg)}
         json_path = "/home/pi/allsky/config/overlay/extra/allskytsl2591SQM.json"
         
         # Create directory if it doesn't exist
-        os.makedirs(os.path.dirname(json_path), exist_ok=True)
-        
-        # Write JSON file
-        with open(json_path, 'w') as f:
-            json.dump(sqm_data, f)
+        try:
+            os.makedirs(os.path.dirname(json_path), exist_ok=True)
+            # Write JSON file
+            with open(json_path, 'w') as f:
+                json.dump(sqm_data, f)
+        except Exception as e:
+            print(f"File IO Error: {e}")
             
     except Exception as e:
         print(f"Error in measurement loop: {e}")
+        # Reset sensor connection if needed
+        # tsl = tsl2591.Tsl2591(1) 
         
     sleep(10)  # Wait 10 seconds between measurements
-    
