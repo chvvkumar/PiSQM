@@ -108,9 +108,9 @@ systemctl enable $SERVICE_NAME
 echo -e "${GREEN}Service enabled${NC}"
 
 echo ""
-echo -e "${YELLOW}Step 6: Starting service...${NC}"
-systemctl start $SERVICE_NAME
-echo -e "${GREEN}Service started${NC}"
+echo -e "${YELLOW}Step 6: Restarting service...${NC}"
+systemctl restart $SERVICE_NAME
+echo -e "${GREEN}Service restarted${NC}"
 
 echo ""
 echo -e "${GREEN}========================================${NC}"

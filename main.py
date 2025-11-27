@@ -17,6 +17,17 @@ TOPIC_SUB = "Test/SQM/sub"
 TOPIC_PUB = "Test/SQM"
 TOPIC_PUB_PARAMS = "Test/SQM/Params"
 
+# Home Assistant Discovery Configuration
+HA_DISCOVERY_PREFIX = "homeassistant"
+HA_NODE_ID = "sqm_reader"
+DEVICE_INFO = {
+    "identifiers": [HA_NODE_ID],
+    "name": "SQM Reader TSL2591",
+    "model": "TSL2591 Custom",
+    "manufacturer": "DIY",
+    "sw_version": "1.0"
+}
+
 # Global Configuration Variables (Can be updated via MQTT)
 # M = M0 + GA - 2.5 * log10(Counts)
 M0 = -16.07       # Magnitude Zero Point
@@ -32,10 +43,95 @@ except Exception as e:
     print(f"Failed to initialize TSL2591 sensor: {e}")
     sys.exit(1)
 
+def publish_ha_discovery(client):
+    """
+    Publishes Home Assistant Auto Discovery payloads for all sensors.
+    """
+    print("Publishing Home Assistant Auto Discovery payloads...")
+    
+    sensors = [
+        {
+            "id": "sqm_value",
+            "name": "Sky Quality",
+            "stat_t": TOPIC_PUB_PARAMS,
+            "val_tpl": "{{ value_json.sqm }}",
+            "unit": "mpsas",
+            "icon": "mdi:weather-night",
+            "dev_cla": "illuminance" 
+        },
+        {
+            "id": "gain",
+            "name": "Sensor Gain",
+            "stat_t": TOPIC_PUB_PARAMS,
+            "val_tpl": "{{ value_json.gain }}",
+            "icon": "mdi:brightness-6",
+            "ent_cat": "diagnostic"
+        },
+        {
+            "id": "integration_time",
+            "name": "Integration Time",
+            "stat_t": TOPIC_PUB_PARAMS,
+            "val_tpl": "{{ value_json.integration_time_ms }}",
+            "unit": "ms",
+            "icon": "mdi:timer-outline",
+            "ent_cat": "diagnostic"
+        },
+        {
+            "id": "config_m0",
+            "name": "Config M0",
+            "stat_t": TOPIC_PUB_PARAMS,
+            "val_tpl": "{{ value_json.config_M0 }}",
+            "icon": "mdi:variable",
+            "ent_cat": "diagnostic"
+        },
+        {
+            "id": "config_ga",
+            "name": "Config GA",
+            "stat_t": TOPIC_PUB_PARAMS,
+            "val_tpl": "{{ value_json.config_GA }}",
+            "icon": "mdi:variable",
+            "ent_cat": "diagnostic"
+        },
+        {
+            "id": "last_update",
+            "name": "Last Update",
+            "stat_t": TOPIC_PUB_PARAMS,
+            "val_tpl": "{{ value_json.timestamp }}",
+            "icon": "mdi:clock-outline",
+            "ent_cat": "diagnostic"
+        }
+    ]
+
+    for sensor in sensors:
+        unique_id = f"{HA_NODE_ID}_{sensor['id']}"
+        topic = f"{HA_DISCOVERY_PREFIX}/sensor/{HA_NODE_ID}/{sensor['id']}/config"
+        
+        payload = {
+            "name": sensor["name"],
+            "unique_id": unique_id,
+            "state_topic": sensor["stat_t"],
+            "value_template": sensor["val_tpl"],
+            "device": DEVICE_INFO
+        }
+        
+        # Add optional fields if present
+        if "unit" in sensor:
+            payload["unit_of_measurement"] = sensor["unit"]
+        if "icon" in sensor:
+            payload["icon"] = sensor["icon"]
+        if "dev_cla" in sensor:
+            payload["device_class"] = sensor["dev_cla"]
+        if "ent_cat" in sensor:
+            payload["entity_category"] = sensor["ent_cat"]
+
+        client.publish(topic, json.dumps(payload), retain=True)
+
 # MQTT callbacks
 def on_connect(client, userdata, flags, rc):
     print(f"Connected to MQTT broker with result code {rc}")
     client.subscribe(TOPIC_SUB)
+    # Publish HA Discovery on connect/reconnect
+    publish_ha_discovery(client)
 
 def on_message(client, userdata, msg):
     """
