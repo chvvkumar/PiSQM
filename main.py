@@ -16,6 +16,7 @@ MQTT_SERVER = "192.168.1.250"
 TOPIC_SUB = "Test/SQM/sub"
 TOPIC_PUB = "Test/SQM"
 TOPIC_PUB_TIME = "Test/SQM/time"
+TOPIC_PUB_PARAMS = "Test/SQM/Params"
 
 # Constants for sky brightness calculation
 # M = M0 + GA - 2.5 * log10(Counts)
@@ -102,6 +103,13 @@ while True:
         if client.is_connected():
             client.publish(TOPIC_PUB, mpsas_msg, retain=True)
             client.publish(TOPIC_PUB_TIME, timestamp, retain=True)
+            
+            # Publish Gain and Integration Time params
+            params_data = {
+                "gain": tsl.gain,
+                "integration_time_ms": tsl.get_int_time_ms()
+            }
+            client.publish(TOPIC_PUB_PARAMS, json.dumps(params_data), retain=True)
             
         print(f"MPSAS: {mpsas_msg} | Time: {tsl.get_int_time_ms()}ms | Gain: {tsl.gain} | Raw Full: {full}")
         
