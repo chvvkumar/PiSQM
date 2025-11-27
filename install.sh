@@ -46,6 +46,11 @@ if ! command -v python3 &> /dev/null; then
     exit 1
 fi
 
+echo ""
+echo -e "${YELLOW}Step 0: Fetching latest updates...${NC}"
+git pull
+echo -e "${GREEN}Fetched latest updates${NC}"
+
 echo -e "${YELLOW}Step 1: Creating virtual environment...${NC}"
 if [ -d "$VENV_DIR" ]; then
     echo "Virtual environment already exists at $VENV_DIR"
