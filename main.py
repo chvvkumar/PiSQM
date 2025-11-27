@@ -51,19 +51,21 @@ def publish_ha_discovery(client):
     
     sensors = [
         {
-            "id": "sqm_value",
-            "name": "Sky Quality",
+            "id": "sqm",
+            "name": "SQM",
             "stat_t": TOPIC_PUB_PARAMS,
             "val_tpl": "{{ value_json.sqm }}",
             "unit": "mpsas",
-            "icon": "mdi:weather-night",
-            "dev_cla": "illuminance" 
+            "stat_cla": "measurement",
+            "icon": "mdi:weather-night"
         },
         {
             "id": "gain",
             "name": "Sensor Gain",
             "stat_t": TOPIC_PUB_PARAMS,
             "val_tpl": "{{ value_json.gain }}",
+            "unit": "x",
+            "stat_cla": "measurement",
             "icon": "mdi:brightness-6",
             "ent_cat": "diagnostic"
         },
@@ -73,6 +75,7 @@ def publish_ha_discovery(client):
             "stat_t": TOPIC_PUB_PARAMS,
             "val_tpl": "{{ value_json.integration_time_ms }}",
             "unit": "ms",
+            "stat_cla": "measurement",
             "icon": "mdi:timer-outline",
             "ent_cat": "diagnostic"
         },
@@ -81,6 +84,8 @@ def publish_ha_discovery(client):
             "name": "Config M0",
             "stat_t": TOPIC_PUB_PARAMS,
             "val_tpl": "{{ value_json.config_M0 }}",
+            "unit": "mag",
+            "stat_cla": "measurement",
             "icon": "mdi:variable",
             "ent_cat": "diagnostic"
         },
@@ -89,6 +94,8 @@ def publish_ha_discovery(client):
             "name": "Config GA",
             "stat_t": TOPIC_PUB_PARAMS,
             "val_tpl": "{{ value_json.config_GA }}",
+            "unit": "mag",
+            "stat_cla": "measurement",
             "icon": "mdi:variable",
             "ent_cat": "diagnostic"
         },
@@ -117,6 +124,8 @@ def publish_ha_discovery(client):
         # Add optional fields if present
         if "unit" in sensor:
             payload["unit_of_measurement"] = sensor["unit"]
+        if "stat_cla" in sensor:
+            payload["state_class"] = sensor["stat_cla"]
         if "icon" in sensor:
             payload["icon"] = sensor["icon"]
         if "dev_cla" in sensor:
