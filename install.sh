@@ -79,7 +79,7 @@ echo -e "${YELLOW}Step 3: Creating systemd service file...${NC}"
 cat > "$SERVICE_FILE" << EOF
 [Unit]
 Description=PiSQM - Sky Quality Meter
-After=network.target time-sync.target
+After=network-online.target time-sync.target
 Wants=network-online.target
 
 [Service]
@@ -87,6 +87,7 @@ Type=simple
 User=pi
 Group=pi
 WorkingDirectory=$PROJECT_DIR
+ExecStartPre=/bin/sleep 10
 ExecStart=$VENV_DIR/bin/python $PROJECT_DIR/main.py
 Restart=always
 RestartSec=10
