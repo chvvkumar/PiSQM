@@ -46,6 +46,11 @@ if ! command -v python3 &> /dev/null; then
     exit 1
 fi
 
+echo ""
+echo -e "${YELLOW}Step 0: Fetching latest updates...${NC}"
+git pull
+echo -e "${GREEN}Fetched latest updates${NC}"
+
 echo -e "${YELLOW}Step 1: Creating virtual environment...${NC}"
 if [ -d "$VENV_DIR" ]; then
     echo "Virtual environment already exists at $VENV_DIR"
@@ -74,7 +79,7 @@ echo -e "${YELLOW}Step 3: Creating systemd service file...${NC}"
 cat > "$SERVICE_FILE" << EOF
 [Unit]
 Description=PiSQM - Sky Quality Meter
-After=network.target time-sync.target
+After=network-online.target time-sync.target
 Wants=network-online.target
 
 [Service]
@@ -82,6 +87,7 @@ Type=simple
 User=pi
 Group=pi
 WorkingDirectory=$PROJECT_DIR
+ExecStartPre=/bin/sleep 10
 ExecStart=$VENV_DIR/bin/python $PROJECT_DIR/main.py
 Restart=always
 RestartSec=10
@@ -108,9 +114,9 @@ systemctl enable $SERVICE_NAME
 echo -e "${GREEN}Service enabled${NC}"
 
 echo ""
-echo -e "${YELLOW}Step 6: Starting service...${NC}"
-systemctl start $SERVICE_NAME
-echo -e "${GREEN}Service started${NC}"
+echo -e "${YELLOW}Step 6: Restarting service...${NC}"
+systemctl restart $SERVICE_NAME
+echo -e "${GREEN}Service restarted${NC}"
 
 echo ""
 echo -e "${GREEN}========================================${NC}"
