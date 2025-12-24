@@ -368,14 +368,9 @@ Where:
 - Dynamic Range: ~188,000,000:1
 - Spectral Responsivity: 400-1050nm
 
-## License
-
-This project does not specify a license. Refer to the original [rabssm/Radiometer](https://github.com/rabssm/Radiometer) project for licensing of derivative concepts.
-
 ## Attribution
 
 Based on concepts from Richard's ESP-based radiometer: https://github.com/rabssm/Radiometer
-   - Ensure MQTT broker is running
 
 ## References
 
