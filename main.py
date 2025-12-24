@@ -31,7 +31,7 @@ DEVICE_INFO = {
 # Global Configuration Variables (Can be updated via MQTT)
 # M = M0 + GA - 2.5 * log10(Counts)
 M0 = -16.07       # Magnitude Zero Point
-GA = 25.55        # Glass Attenuation
+GA = 28.02        # Glass Attenuation
 MEASURE_INTERVAL = 10 # Seconds between readings
 
 # Initialize the TSL2591 sensor
