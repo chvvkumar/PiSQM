@@ -1,2 +1,5 @@
 smbus2
 paho-mqtt
+adafruit-circuitpython-ina260
+board
+adafruit-blinka

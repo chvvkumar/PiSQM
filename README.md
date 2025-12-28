@@ -1,10 +1,10 @@
 # PiSQM - Sky Quality Meter for Raspberry Pi
 
-Automated sky brightness monitoring system using the TSL2591 light sensor with MQTT telemetry and Home Assistant integration.
+Automated sky brightness monitoring system using the TSL2591 light sensor and INA260 power sensor with MQTT telemetry and Home Assistant integration.
 
 ## Overview
 
-PiSQM measures sky brightness in magnitudes per square arcsecond (MPSAS) using a TSL2591 digital light sensor. The system features adaptive auto-ranging for measurements from daylight conditions to dark sky readings (~22 MPSAS). Measurements are published via MQTT with automatic Home Assistant discovery support.
+PiSQM measures sky brightness in magnitudes per square arcsecond (MPSAS) using a TSL2591 digital light sensor. The system features adaptive auto-ranging for measurements from daylight conditions to dark sky readings (~22 MPSAS). It also monitors power consumption using an INA260 sensor. Measurements are published via MQTT with automatic Home Assistant discovery support.
 
 Inspired by [rabssm/Radiometer](https://github.com/rabssm/Radiometer).
 
@@ -14,6 +14,7 @@ Inspired by [rabssm/Radiometer](https://github.com/rabssm/Radiometer).
 
 - Raspberry Pi (any model with I2C GPIO pins)
 - TSL2591 light sensor module
+- INA260 power sensor module
 - Jumper wires for I2C connection
 - Weatherproof enclosure (for outdoor deployment)
 
@@ -51,22 +52,22 @@ sudo apt-get install -y i2c-tools python3-venv git
 
 ### 2. Verify Sensor Connection
 
-Connect the TSL2591 sensor to the Raspberry Pi I2C pins:
+Connect the TSL2591 and INA260 sensors to the Raspberry Pi I2C pins:
 
-| TSL2591 Pin | Raspberry Pi Pin | GPIO Function |
+| Sensor Pin | Raspberry Pi Pin | GPIO Function |
 |-------------|------------------|---------------|
 | VIN         | Pin 1            | 3.3V          |
 | GND         | Pin 6            | Ground        |
 | SDA         | Pin 3            | GPIO2 (SDA)   |
 | SCL         | Pin 5            | GPIO3 (SCL)   |
 
-Verify the sensor is detected at address `0x29`:
+Verify the sensors are detected at address `0x29` (TSL2591) and `0x40` (INA260):
 
 ```bash
 sudo i2cdetect -y 1
 ```
 
-Expected output shows `29` in the grid.
+Expected output shows `29` and `40` in the grid.
 
 ### 3. Clone Repository
 
@@ -105,7 +106,7 @@ sudo ./install.sh
 The script will:
 - Fetch latest updates from git
 - Create a Python virtual environment
-- Install dependencies (`smbus2`, `paho-mqtt`)
+- Install dependencies from `requirements.txt`
 - Generate and install systemd service file
 - Enable auto-start on boot
 - Start the service
@@ -211,6 +212,7 @@ Console output during operation:
 
 ```
 Initializing TSL2591...
+Initializing INA260...
 Publishing Home Assistant Auto Discovery payloads...
 Connected to MQTT broker with result code 0
 Starting auto-ranging measurement loop...
@@ -236,7 +238,10 @@ Example `Test/SQM/Params` payload:
   "integration_time_ms": 200,
   "timestamp": "2025-12-24 14:30:45",
   "config_M0": -16.07,
-  "config_GA": 28.02
+  "config_GA": 28.02,
+  "ina260_current": 0.1,
+  "ina260_voltage": 12.1,
+  "ina260_power": 1.2
 }
 ```
 
@@ -245,6 +250,9 @@ Example `Test/SQM/Params` payload:
 The system publishes MQTT discovery messages on startup. Entities appear automatically in Home Assistant:
 
 - **SQM** (mpsas) - Primary sky quality measurement
+- **INA260 Current** (A)
+- **INA260 Voltage** (V)
+- **INA260 Power** (W)
 - **Sensor Gain** (diagnostic)
 - **Integration Time** (diagnostic)
 - **Config M0** (diagnostic)
@@ -339,6 +347,7 @@ The project directory and virtual environment remain intact for potential reinst
 PiSQM/
 ├── main.py                      # Main application entry point
 ├── tsl2591.py                   # TSL2591 sensor driver with auto-ranging
+├── ina260.py                    # INA260 sensor driver
 ├── requirements.txt             # Python dependencies
 ├── install.sh                   # Automated installation script
 ├── uninstall.sh                 # Service removal script
@@ -375,4 +384,5 @@ Based on concepts from Richard's ESP-based radiometer: https://github.com/rabssm
 ## References
 
 - TSL2591 Datasheet: https://ams.com/documents/20143/36005/TSL2591_DS000338_6-00.pdf
+- INA260 Datasheet: https://www.ti.com/lit/ds/symlink/ina260.pdf
 - Sky Quality Measurement theory: https://www.mnassa.org.za/html/Oct2017/2017MNASSA..76..Oct..215.pdf
