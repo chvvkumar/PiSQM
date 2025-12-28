@@ -48,6 +48,7 @@ except Exception as e:
 try:
     print("Initializing INA260...")
     ina = ina260.INA260()
+    ina.check_id()
 except Exception as e:
     print(f"Failed to initialize INA260 sensor: {e}")
     # Continue without the INA260 sensor
