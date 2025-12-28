@@ -1,4 +1,6 @@
+
 import smbus2
+import time
 
 class INA260:
     """
@@ -16,6 +18,7 @@ class INA260:
 
     def __init__(self, bus=1):
         self.bus = smbus2.SMBus(bus)
+        self.readings = []
 
     def _read_register(self, reg):
         """Read a 16-bit register (big-endian)"""
@@ -50,11 +53,55 @@ class INA260:
         current = current_raw * 1.25 / 1000   # Convert to Amps
         power = power_raw * 10 / 1000         # Convert to Watts
 
+        # Store reading
+        self.readings.append({
+            "timestamp": time.time(),
+            "voltage": voltage,
+            "current": current,
+            "power": power
+        })
+
         return {
             "current": current,
             "voltage": voltage,
             "power": power
         }
+
+    def get_metrics(self):
+        """
+        Returns a dictionary with all the metrics for the last 24 hours.
+        """
+        now = time.time()
+        twenty_four_hours_ago = now - (24 * 3600)
+
+        # Filter readings for the last 24 hours
+        recent_readings = [r for r in self.readings if r["timestamp"] > twenty_four_hours_ago]
+        self.readings = recent_readings # Prune old readings
+
+        if not recent_readings:
+            return {}
+
+        voltages = [r["voltage"] for r in recent_readings]
+        currents = [r["current"] for r in recent_readings]
+        powers = [r["power"] for r in recent_readings]
+
+        return {
+            "voltage_min": min(voltages),
+            "voltage_max": max(voltages),
+            "voltage_avg": sum(voltages) / len(voltages),
+            "current_min": min(currents),
+            "current_max": max(currents),
+            "current_avg": sum(currents) / len(currents),
+            "power_min": min(powers),
+            "power_max": max(powers),
+            "power_avg": sum(powers) / len(powers),
+        }
+
+    def reset_metrics(self):
+        """
+        Resets all the metrics.
+        """
+        self.readings = []
 
     def close(self):
         self.bus.close()

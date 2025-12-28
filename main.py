@@ -98,6 +98,87 @@ def publish_ha_discovery(client):
             "icon": "mdi:power-plug"
         },
         {
+            "id": "ina260_voltage_min",
+            "name": "INA260 Voltage Min",
+            "stat_t": TOPIC_PUB_PARAMS,
+            "val_tpl": "{{ value_json.ina260_voltage_min }}",
+            "unit": "V",
+            "stat_cla": "measurement",
+            "icon": "mdi:lightning-bolt"
+        },
+        {
+            "id": "ina260_voltage_max",
+            "name": "INA260 Voltage Max",
+            "stat_t": TOPIC_PUB_PARAMS,
+            "val_tpl": "{{ value_json.ina260_voltage_max }}",
+            "unit": "V",
+            "stat_cla": "measurement",
+            "icon": "mdi:lightning-bolt"
+        },
+        {
+            "id": "ina260_voltage_avg",
+            "name": "INA260 Voltage Avg",
+            "stat_t": TOPIC_PUB_PARAMS,
+            "val_tpl": "{{ value_json.ina260_voltage_avg }}",
+            "unit": "V",
+            "stat_cla": "measurement",
+            "icon": "mdi:lightning-bolt"
+        },
+        {
+            "id": "ina260_current_min",
+            "name": "INA260 Current Min",
+            "stat_t": TOPIC_PUB_PARAMS,
+            "val_tpl": "{{ value_json.ina260_current_min }}",
+            "unit": "A",
+            "stat_cla": "measurement",
+            "icon": "mdi:current-ac"
+        },
+        {
+            "id": "ina260_current_max",
+            "name": "INA260 Current Max",
+            "stat_t": TOPIC_PUB_PARAMS,
+            "val_tpl": "{{ value_json.ina260_current_max }}",
+            "unit": "A",
+            "stat_cla": "measurement",
+            "icon": "mdi:current-ac"
+        },
+        {
+            "id": "ina260_current_avg",
+            "name": "INA260 Current Avg",
+            "stat_t": TOPIC_PUB_PARAMS,
+            "val_tpl": "{{ value_json.ina260_current_avg }}",
+            "unit": "A",
+            "stat_cla": "measurement",
+            "icon": "mdi:current-ac"
+        },
+        {
+            "id": "ina260_power_min",
+            "name": "INA260 Power Min",
+            "stat_t": TOPIC_PUB_PARAMS,
+            "val_tpl": "{{ value_json.ina260_power_min }}",
+            "unit": "W",
+            "stat_cla": "measurement",
+            "icon": "mdi:power-plug"
+        },
+        {
+            "id": "ina260_power_max",
+            "name": "INA260 Power Max",
+            "stat_t": TOPIC_PUB_PARAMS,
+            "val_tpl": "{{ value_json.ina260_power_max }}",
+            "unit": "W",
+            "stat_cla": "measurement",
+            "icon": "mdi:power-plug"
+        },
+        {
+            "id": "ina260_power_avg",
+            "name": "INA260 Power Avg",
+            "stat_t": TOPIC_PUB_PARAMS,
+            "val_tpl": "{{ value_json.ina260_power_avg }}",
+            "unit": "W",
+            "stat_cla": "measurement",
+            "icon": "mdi:power-plug"
+        },
+        {
             "id": "gain",
             "name": "Sensor Gain",
             "stat_t": TOPIC_PUB_PARAMS,
@@ -280,9 +361,22 @@ while True:
             if ina:
                 try:
                     ina_data = ina.read()
-                    params_data["ina260_current"] = round(ina_data["current"], 2)
-                    params_data["ina260_voltage"] = round(ina_data["voltage"], 2)
-                    params_data["ina260_power"] = round(ina_data["power"], 2)
+                    params_data["ina260_current"] = round(ina_data["current"], 3)
+                    params_data["ina260_voltage"] = round(ina_data["voltage"], 3)
+                    params_data["ina260_power"] = round(ina_data["power"], 3)
+
+                    metrics = ina.get_metrics()
+                    if metrics:
+                        params_data["ina260_current_avg"] = round(metrics["current_avg"], 3)
+                        params_data["ina260_current_min"] = round(metrics["current_min"], 3)
+                        params_data["ina260_current_max"] = round(metrics["current_max"], 3)
+                        params_data["ina260_voltage_avg"] = round(metrics["voltage_avg"], 3)
+                        params_data["ina260_voltage_min"] = round(metrics["voltage_min"], 3)
+                        params_data["ina260_voltage_max"] = round(metrics["voltage_max"], 3)
+                        params_data["ina260_power_avg"] = round(metrics["power_avg"], 3)
+                        params_data["ina260_power_min"] = round(metrics["power_min"], 3)
+                        params_data["ina260_power_max"] = round(metrics["power_max"], 3)
+
                 except Exception as e:
                     print(f"Failed to read from INA260: {e}")
 
