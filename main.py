@@ -2,6 +2,7 @@
 # Uses TSL2591 to calculate MPSAS (Magnitudes Per Square Arc Second)
 
 import tsl2591
+import ina260
 import time
 import math
 import paho.mqtt.client as mqtt
@@ -22,10 +23,10 @@ HA_DISCOVERY_PREFIX = "homeassistant"
 HA_NODE_ID = "sqm_reader"
 DEVICE_INFO = {
     "identifiers": [HA_NODE_ID],
-    "name": "SQM Reader TSL2591",
-    "model": "TSL2591 Custom",
+    "name": "SQM Reader",
+    "model": "TSL2591+INA260 Custom",
     "manufacturer": "DIY",
-    "sw_version": "1.0"
+    "sw_version": "1.1"
 }
 
 # Global Configuration Variables (Can be updated via MQTT)
@@ -43,6 +44,16 @@ except Exception as e:
     print(f"Failed to initialize TSL2591 sensor: {e}")
     sys.exit(1)
 
+# Initialize the INA260 sensor
+try:
+    print("Initializing INA260...")
+    ina = ina260.INA260()
+    ina.check_id()
+except Exception as e:
+    print(f"Failed to initialize INA260 sensor: {e}")
+    # Continue without the INA260 sensor
+    ina = None
+
 def publish_ha_discovery(client):
     """
     Publishes Home Assistant Auto Discovery payloads for all sensors.
@@ -58,6 +69,33 @@ def publish_ha_discovery(client):
             "unit": "mpsas",
             "stat_cla": "measurement",
             "icon": "mdi:weather-night"
+        },
+        {
+            "id": "ina260_current",
+            "name": "INA260 Current",
+            "stat_t": TOPIC_PUB_PARAMS,
+            "val_tpl": "{{ value_json.ina260_current }}",
+            "unit": "A",
+            "stat_cla": "measurement",
+            "icon": "mdi:current-ac"
+        },
+        {
+            "id": "ina260_voltage",
+            "name": "INA260 Voltage",
+            "stat_t": TOPIC_PUB_PARAMS,
+            "val_tpl": "{{ value_json.ina260_voltage }}",
+            "unit": "V",
+            "stat_cla": "measurement",
+            "icon": "mdi:lightning-bolt"
+        },
+        {
+            "id": "ina260_power",
+            "name": "INA260 Power",
+            "stat_t": TOPIC_PUB_PARAMS,
+            "val_tpl": "{{ value_json.ina260_power }}",
+            "unit": "W",
+            "stat_cla": "measurement",
+            "icon": "mdi:power-plug"
         },
         {
             "id": "gain",
@@ -239,6 +277,15 @@ while True:
                 "config_M0": M0,
                 "config_GA": GA
             }
+            if ina:
+                try:
+                    ina_data = ina.read()
+                    params_data["ina260_current"] = round(ina_data["current"], 2)
+                    params_data["ina260_voltage"] = round(ina_data["voltage"], 2)
+                    params_data["ina260_power"] = round(ina_data["power"], 2)
+                except Exception as e:
+                    print(f"Failed to read from INA260: {e}")
+
             client.publish(TOPIC_PUB_PARAMS, json.dumps(params_data), retain=True)
             
         print(f"MPSAS: {mpsas_msg} | Time: {tsl.get_int_time_ms()}ms | Gain: {tsl.gain} | Interval: {MEASURE_INTERVAL}s")
