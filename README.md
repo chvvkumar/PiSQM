@@ -241,7 +241,16 @@ Example `Test/SQM/Params` payload:
   "config_GA": 28.02,
   "ina260_current": 0.1,
   "ina260_voltage": 12.1,
-  "ina260_power": 1.2
+  "ina260_power": 1.2,
+  "ina260_current_avg": 0.1,
+  "ina260_current_min": 0.0,
+  "ina260_current_max": 0.2,
+  "ina260_voltage_avg": 12.1,
+  "ina260_voltage_min": 12.0,
+  "ina260_voltage_max": 12.2,
+  "ina260_power_avg": 1.2,
+  "ina260_power_min": 0.0,
+  "ina260_power_max": 2.4
 }
 ```
 
@@ -253,6 +262,15 @@ The system publishes MQTT discovery messages on startup. Entities appear automat
 - **INA260 Current** (A)
 - **INA260 Voltage** (V)
 - **INA260 Power** (W)
+- **INA260 Current Avg** (A)
+- **INA260 Current Min** (A)
+- **INA260 Current Max** (A)
+- **INA260 Voltage Avg** (V)
+- **INA260 Voltage Min** (V)
+- **INA260 Voltage Max** (V)
+- **INA260 Power Avg** (W)
+- **INA260 Power Min** (W)
+- **INA260 Power Max** (W)
 - **Sensor Gain** (diagnostic)
 - **Integration Time** (diagnostic)
 - **Config M0** (diagnostic)
