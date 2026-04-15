@@ -391,8 +391,12 @@ while True:
         # Create directory if it doesn't exist
         try:
             os.makedirs(os.path.dirname(json_path), exist_ok=True)
-            with open(json_path, 'w') as f:
+            # Write atomically so readers (Allsky overlay / publishdata) never
+            # see a zero-byte or partially-written file.
+            tmp_path = f"{json_path}.tmp"
+            with open(tmp_path, 'w') as f:
                 json.dump(sqm_data, f)
+            os.replace(tmp_path, json_path)
         except Exception as e:
             print(f"File IO Error: {e}")
             
