@@ -385,7 +385,16 @@ while True:
         print(f"MPSAS: {mpsas_msg} | Time: {tsl.get_int_time_ms()}ms | Gain: {tsl.gain} | Interval: {MEASURE_INTERVAL}s")
         
         # Write SQM value to JSON file
-        sqm_data = {"AS_MPSAS": float(mpsas_msg)}
+        sqm_data = {
+            "AS_MPSAS": {
+                "value": float(mpsas_msg),
+                "type": "number",
+                "format": "{:.2f}",
+                "group": "SQM",
+                "description": "Sky quality (mag/arcsec^2) from TSL2591",
+                "source": "pisqm",
+            }
+        }
         json_path = "/home/pi/allsky/config/overlay/extra/allskytsl2591SQM.json"
         
         # Create directory if it doesn't exist
