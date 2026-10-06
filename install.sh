@@ -48,7 +48,7 @@ fi
 
 echo ""
 echo -e "${YELLOW}Step 0: Fetching latest updates...${NC}"
-git pull
+sudo -u "${SUDO_USER:-pi}" git -C "$PROJECT_DIR" pull
 echo -e "${GREEN}Fetched latest updates${NC}"
 
 echo -e "${YELLOW}Step 1: Creating virtual environment...${NC}"
