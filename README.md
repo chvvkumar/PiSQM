@@ -143,6 +143,8 @@ Edit these values in [main.py](main.py) based on your setup:
 | `M0` | -16.07 | Magnitude zero point for sensor calibration |
 | `GA` | 28.02 | Glass attenuation factor (accounts for enclosure transmission loss) |
 | `MEASURE_INTERVAL` | 10 | Seconds between measurements |
+| `AVG_SAMPLES` | 12 | Readings averaged per reported value. Averaging is done in linear flux. 12 readings at 10 s gives a 2 minute window |
+| `DARK_FLUX` | 0.0 | Flux in µW/cm² that the sensor reports with no light. Subtracted before the magnitude conversion |
 
 **Note:** `GA` must be calibrated for your specific enclosure. Higher values indicate more light loss through glass/acrylic.
 
@@ -158,6 +160,22 @@ Supported parameters:
 - `M0`: Magnitude zero point
 - `GA`: Glass attenuation
 - `interval`: Measurement interval in seconds
+- `dark`: Dark flux offset in µW/cm²
+- `avg_samples`: Number of readings averaged
+
+Values set over MQTT are lost when the service restarts. Edit [main.py](main.py) to make them permanent.
+
+### Measuring the Dark Offset
+
+Under dark skies the sensor signal is only a few counts, so its own dark counts matter.
+
+1. At night, cover the sensor dome so no light reaches it.
+2. Wait for a full averaging window (2 minutes by default).
+3. Read `flux` from the `Test/SQM/Params` topic or the service log.
+4. Set that value as `DARK_FLUX`, or send `{"dark": <value>}` over MQTT.
+5. Uncover the dome.
+
+A `flux` reading well above zero with the dome covered also indicates stray light inside the enclosure.
 
 ### Allsky Integration
 

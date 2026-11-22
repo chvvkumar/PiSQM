@@ -11,6 +11,8 @@ import sys
 import signal
 import json
 import os
+from collections import deque
+from skycalc import mpsas_from_samples
 
 # MQTT Configuration
 MQTT_SERVER = "192.168.1.250"
@@ -34,6 +36,11 @@ DEVICE_INFO = {
 M0 = -16.07       # Magnitude Zero Point
 GA = 28.02        # Glass Attenuation
 MEASURE_INTERVAL = 10 # Seconds between readings
+AVG_SAMPLES = 12      # Readings averaged per reported value (12 x 10 s = 2 min)
+DARK_FLUX = 0.0       # Flux (uW/cm2) reported with the dome capped; see README
+
+# Recent flux readings (full minus IR, uW/cm2)
+flux_window = deque(maxlen=AVG_SAMPLES)
 
 # Initialize the TSL2591 sensor
 try:
@@ -219,6 +226,26 @@ def publish_ha_discovery(client):
             "ent_cat": "diagnostic"
         },
         {
+            "id": "flux",
+            "name": "Flux",
+            "stat_t": TOPIC_PUB_PARAMS,
+            "val_tpl": "{{ value_json.flux }}",
+            "unit": "µW/cm²",
+            "stat_cla": "measurement",
+            "icon": "mdi:brightness-5",
+            "ent_cat": "diagnostic"
+        },
+        {
+            "id": "config_dark",
+            "name": "Config Dark Flux",
+            "stat_t": TOPIC_PUB_PARAMS,
+            "val_tpl": "{{ value_json.config_dark }}",
+            "unit": "µW/cm²",
+            "stat_cla": "measurement",
+            "icon": "mdi:variable",
+            "ent_cat": "diagnostic"
+        },
+        {
             "id": "last_update",
             "name": "Last Update",
             "stat_t": TOPIC_PUB_PARAMS,
@@ -264,9 +291,10 @@ def on_connect(client, userdata, flags, rc):
 def on_message(client, userdata, msg):
     """
     Handle incoming remote configuration messages.
-    Expected Payload: JSON e.g. {"M0": -16.0, "GA": 25.0, "interval": 5}
+    Expected Payload: JSON e.g. {"M0": -16.0, "GA": 25.0, "interval": 5,
+    "dark": 0.00005, "avg_samples": 12}
     """
-    global M0, GA, MEASURE_INTERVAL
+    global M0, GA, MEASURE_INTERVAL, DARK_FLUX, flux_window
     try:
         payload_str = msg.payload.decode()
         print(f"Message received on {msg.topic}: {payload_str}")
@@ -284,7 +312,16 @@ def on_message(client, userdata, msg):
         if "interval" in data:
             MEASURE_INTERVAL = float(data["interval"])
             print(f"Remote Config: Updated Interval to {MEASURE_INTERVAL}s")
-            
+
+        if "dark" in data:
+            DARK_FLUX = float(data["dark"])
+            print(f"Remote Config: Updated dark flux to {DARK_FLUX}")
+
+        if "avg_samples" in data:
+            n = max(1, int(data["avg_samples"]))
+            flux_window = deque(flux_window, maxlen=n)
+            print(f"Remote Config: Updated averaging to {n} samples")
+
     except json.JSONDecodeError:
         print("Error: Received invalid JSON on subscription topic")
     except ValueError as e:
@@ -336,12 +373,11 @@ while True:
         full_C, ir_C = tsl.calculate_light(full, ir)
         
         # Calculate sky brightness (MPSAS)
-        flux_diff = full_C - ir_C
-        if flux_diff > 0:
-            mpsas = M0 + GA - 2.5 * math.log10(flux_diff)
-        else:
-            mpsas = 25.0 # Typical dark limit convention
-            
+        # Averaged over recent readings and corrected for the dark offset
+        window = flux_window
+        window.append(full_C - ir_C)
+        mpsas, mean_flux = mpsas_from_samples(list(window), M0, GA, DARK_FLUX)
+
         # Format and publish messages
         mpsas_msg = f"{mpsas:.2f}"
         timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
@@ -356,7 +392,12 @@ while True:
                 "integration_time_ms": tsl.get_int_time_ms(),
                 "timestamp": timestamp,
                 "config_M0": M0,
-                "config_GA": GA
+                "config_GA": GA,
+                "config_dark": DARK_FLUX,
+                "flux": float(f"{mean_flux:.4g}"),
+                "raw_full": full,
+                "raw_ir": ir,
+                "avg_samples": len(window)
             }
             if ina:
                 try:
@@ -382,7 +423,7 @@ while True:
 
             client.publish(TOPIC_PUB_PARAMS, json.dumps(params_data), retain=True)
             
-        print(f"MPSAS: {mpsas_msg} | Time: {tsl.get_int_time_ms()}ms | Gain: {tsl.gain} | Interval: {MEASURE_INTERVAL}s")
+        print(f"MPSAS: {mpsas_msg} | Flux: {mean_flux:.4g} (avg of {len(window)}) | Raw full/ir: {full}/{ir} | Time: {tsl.get_int_time_ms()}ms | Gain: {tsl.gain} | Interval: {MEASURE_INTERVAL}s")
         
         # Write SQM value to JSON file
         sqm_data = {
